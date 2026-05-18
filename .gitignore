@@ -1,0 +1,10 @@
+node_modules/
+coverage/
+scripts/node_modules/
+scripts/baseline-coverage.json
+scripts/test-pattern.json
+scripts/email-body.html
+*.env
+.env*
+dist/
+.next/

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(node -e \"const s=require\\('./coverage/coverage-summary.json'\\); const t=s.total; console.log\\('Total lines:', t.lines.pct + '%'\\); console.log\\('Total statements:', t.statements.pct + '%'\\); Object.entries\\(s\\).filter\\(\\([k]\\)=>k!=='total'\\).forEach\\(\\([f,d]\\)=>console.log\\(f, d.lines.pct+'%'\\)\\)\")",
+      "Bash(node scripts/discover-test-pattern.js)",
+      "Bash(node scripts/select-files.js)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/dev/stdin','utf8'\\)\\); console.log\\('convention:', d.convention, '| testDir:', d.testDir, '| example:', d.example\\)\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('scripts/test-pattern.json','utf8'\\)\\); console.log\\('convention:', d.convention\\); console.log\\('testDir:', d.testDir\\); console.log\\('suffix:', d.suffix\\); console.log\\('example:', d.example\\)\")"
+    ]
+  }
+}
