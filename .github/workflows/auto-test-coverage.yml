@@ -153,14 +153,6 @@ jobs:
           echo "PR_URL=${{ steps.cpr.outputs.pull-request-url }}" >> $GITHUB_ENV
           echo "PR_CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
 
-      # ── SonarCloud scan (remove this block when deploying to company repo) ──
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
       # ── Poll SonarCloud — Attempt 1 ──────────────────────────────
 
       - name: Poll SonarCloud — Attempt 1
