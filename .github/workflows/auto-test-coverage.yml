@@ -123,7 +123,7 @@ jobs:
         run: |
           git config user.name "Coverage Agent Bot"
           git config user.email "coverage-agent@users.noreply.github.com"
-          git add "**/*.test.tsx" "**/*.test.ts"
+          find src -name "*.test.tsx" -o -name "*.test.ts" | xargs --no-run-if-empty git add --
           git diff --staged --quiet || \
             git commit -m "test: AI-generated tests to boost coverage (was ${{ env.PREV_COVERAGE }}%)"
 
@@ -207,7 +207,7 @@ jobs:
       - name: Commit and push — Attempt 2
         if: env.TARGET_REACHED == 'false'
         run: |
-          git add "**/*.test.tsx" "**/*.test.ts"
+          find src -name "*.test.tsx" -o -name "*.test.ts" | xargs --no-run-if-empty git add --
           git diff --staged --quiet || git commit -m "test: additional AI tests — attempt 2"
           git push origin auto/coverage-${{ github.run_id }}
 
@@ -252,7 +252,7 @@ jobs:
       - name: Commit and push — Attempt 3
         if: env.TARGET_REACHED == 'false'
         run: |
-          git add "**/*.test.tsx" "**/*.test.ts"
+          find src -name "*.test.tsx" -o -name "*.test.ts" | xargs --no-run-if-empty git add --
           git diff --staged --quiet || git commit -m "test: additional AI tests — attempt 3 (final)"
           git push origin auto/coverage-${{ github.run_id }}
 

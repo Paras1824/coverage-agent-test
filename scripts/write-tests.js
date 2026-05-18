@@ -48,7 +48,7 @@ function stripCodeBlock(text) {
   return text.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
 }
 
-function buildPrompt(srcPath, srcContent, existingTest, example) {
+function buildPrompt(srcPath, srcContent, existingTest, example, relativeImport) {
   return `You are a React testing expert. Write Jest + React Testing Library tests for the component below.
 
 COMPONENT SOURCE FILE: ${srcPath}
@@ -60,13 +60,29 @@ ${existingTest || 'No existing test file'}
 EXAMPLE TEST FROM THIS REPO (follow this exact style, imports, and folder pattern):
 ${example}
 
+EXACT IMPORT TO USE FOR THIS COMPONENT (use this path verbatim):
+import { ComponentName } from '${relativeImport}';
+(replace ComponentName with the actual exported name from the component)
+
 RTL RULES YOU MUST FOLLOW:
 1. Use getByRole, getByLabelText, getByText — NOT getByTestId or container.querySelector
-2. Use userEvent (from @testing-library/user-event) for clicks and typing — NOT fireEvent
-3. Never write snapshot-only tests. Every test must assert real user-visible behaviour.
-4. Use waitFor for async operations.
-5. Mock external dependencies (fetch, API calls) with jest.fn()
-6. Components use inline styles only — no CSS modules or className-based assertions needed.
+2. userEvent v14 — ALWAYS set up like this:
+   import userEvent from '@testing-library/user-event';
+   ...
+   const user = userEvent.setup();
+   await user.click(element);
+   await user.type(input, 'hello');
+   Do NOT call userEvent.click() or userEvent.type() directly — that is the old v13 API and will fail.
+3. Every describe/it block that uses userEvent must be async.
+4. Never write snapshot-only tests. Every test must assert real user-visible behaviour.
+5. Use waitFor for async state updates.
+6. Components use inline styles only — no CSS class assertions needed.
+
+STANDARD IMPORTS (always include all of these):
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import '@testing-library/jest-dom';
 
 TASK:
 Write comprehensive Jest + RTL tests for this component.
@@ -104,6 +120,10 @@ for (const srcPath of files) {
   }
 
   const testPath = getTestPath(srcPath);
+  const relativeImport = path
+    .relative(path.dirname(testPath), srcPath)
+    .replace(/\\/g, '/')
+    .replace(/\.tsx?$/, '');
   const existingTest = fs.existsSync(testPath) ? fs.readFileSync(testPath, 'utf8') : null;
 
   let testContent = '';
@@ -116,7 +136,7 @@ for (const srcPath of files) {
     try {
       const prompt =
         attempt === 1
-          ? buildPrompt(srcPath, srcContent, existingTest, pattern.exampleContent)
+          ? buildPrompt(srcPath, srcContent, existingTest, pattern.exampleContent, relativeImport)
           : buildFixPrompt(lastError, testContent);
       testContent = stripCodeBlock(await callGemini(prompt));
     } catch (err) {
@@ -137,7 +157,7 @@ for (const srcPath of files) {
       break;
     } catch (err) {
       lastError = (err.stdout || '') + '\n' + (err.stderr || '');
-      console.warn(`  ❌ Attempt ${attempt} failed: ${lastError.slice(0, 120)}`);
+      console.warn(`  ❌ Attempt ${attempt} failed:\n${lastError.slice(0, 800)}`);
     }
   }
 
