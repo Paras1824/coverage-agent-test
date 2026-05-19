@@ -11,8 +11,10 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function getOverallCoverage(projectKey) {
-  const url = `https://sonarcloud.io/api/measures/component?component=${projectKey}&metricKeys=coverage`;
+async function getPRCoverage(projectKey, prNumber) {
+  // Use ?pullRequest= to get full-repo coverage as it would be once this PR is merged,
+  // not just "Coverage on New Code" which is 0% for test-only PRs.
+  const url = `https://sonarcloud.io/api/measures/component?component=${projectKey}&pullRequest=${prNumber}&metricKeys=coverage`;
   const headers = process.env.SONAR_TOKEN
     ? { Authorization: `Bearer ${process.env.SONAR_TOKEN}` }
     : {};
@@ -53,10 +55,10 @@ for (let poll = 1; poll <= MAX_POLLS; poll++) {
   );
 
   if (sonarComment) {
-    console.log('SonarCloud comment found. Fetching overall project coverage via API...');
-    const coverage = await getOverallCoverage(projectKey);
+    console.log(`SonarCloud comment found. Fetching full-repo coverage for PR #${prNumber}...`);
+    const coverage = await getPRCoverage(projectKey, prNumber);
     if (coverage !== null) {
-      console.log(`Overall project coverage: ${coverage}%`);
+      console.log(`Full-repo coverage (PR #${prNumber}): ${coverage}%`);
       writeEnv('SONAR_COVERAGE', String(coverage));
       process.exit(0);
     }
