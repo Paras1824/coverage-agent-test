@@ -7,20 +7,7 @@ function writeEnv(key, value) {
   console.log(`[ENV] ${line.trim()}`);
 }
 
-async function getOverallCoverage(projectKey) {
-  const url = `https://sonarcloud.io/api/measures/component?component=${projectKey}&metricKeys=coverage`;
-  const headers = process.env.SONAR_TOKEN
-    ? { Authorization: `Bearer ${process.env.SONAR_TOKEN}` }
-    : {};
-  const res = await fetch(url, { headers });
-  if (!res.ok) return null;
-  const data = await res.json();
-  const measure = data.component?.measures?.find((m) => m.metric === 'coverage');
-  return measure?.value ? parseFloat(measure.value) : null;
-}
-
 const [owner, repo] = (process.env.GITHUB_REPOSITORY || 'owner/repo').split('/');
-const projectKey = `${owner}_${repo}`;
 const octokit = new Octokit({ auth: process.env.GH_TOKEN || process.env.GITHUB_TOKEN });
 
 const { data: pulls } = await octokit.rest.pulls.list({
@@ -48,24 +35,23 @@ const { data: comments } = await octokit.rest.issues.listComments({
   issue_number: mergedPR.number,
 });
 
-// Match both old format ("SonarQube Quality Gate") and new format ("Quality Gate")
-const sonarComment = comments.find((c) => c.body?.includes('Quality Gate'));
+// Look for the custom coverage comment posted by post-sonar-comment.js
+const sonarComment = comments.find((c) => c.body?.includes('📊 Coverage'));
 
 if (!sonarComment) {
-  console.warn(`No SonarCloud comment on PR #${mergedPR.number}. Setting PREV_COVERAGE=0`);
-  console.warn('Tip: ensure sonar-pr.yml ran and SonarCloud commented before the PR was merged.');
+  console.warn(`No SonarCloud coverage comment on PR #${mergedPR.number}. Setting PREV_COVERAGE=0`);
   writeEnv('PREV_COVERAGE', '0');
   process.exit(0);
 }
 
-console.log('SonarCloud comment found on PR. Fetching overall project coverage from API...');
-const coverage = await getOverallCoverage(projectKey);
-
-if (coverage === null) {
-  console.warn('Could not read coverage from SonarCloud API. Setting PREV_COVERAGE=0');
+// Parse coverage directly from the comment: | 📊 Coverage | 41.83% |
+const match = sonarComment.body.match(/📊 Coverage \| *([\d.]+)%/);
+if (!match) {
+  console.warn('Could not parse coverage from comment. Setting PREV_COVERAGE=0');
   writeEnv('PREV_COVERAGE', '0');
   process.exit(0);
 }
 
-console.log(`Overall project coverage: ${coverage}%`);
+const coverage = parseFloat(match[1]);
+console.log(`Overall project coverage from PR comment: ${coverage}%`);
 writeEnv('PREV_COVERAGE', String(coverage));
