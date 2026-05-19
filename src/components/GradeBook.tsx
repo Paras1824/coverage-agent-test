@@ -105,7 +105,9 @@ const GradeBook: React.FC<GradeBookProps> = ({ studentName, courseTitle, entries
               textTransform: 'capitalize',
             }}
           >
-            {cat}
+            {cat === 'all'
+              ? `All (${entries.length})`
+              : `${cat} (${entries.filter((e) => e.category === cat).length})`}
           </button>
         ))}
         <button
