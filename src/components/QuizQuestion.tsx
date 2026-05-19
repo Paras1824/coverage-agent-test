@@ -146,7 +146,14 @@ const QuizQuestion: React.FC<QuizQuestionProps> = ({
           const showWrong = showFeedback && submitted && isSelected && !option.isCorrect;
 
           return (
-            <li key={option.id} style={getOptionStyle(option)} onClick={() => toggleOption(option.id)}>
+            <li
+              key={option.id}
+              style={getOptionStyle(option)}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                toggleOption(option.id);
+              }}
+            >
               <input
                 type={inputType}
                 id={inputId}
