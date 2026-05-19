@@ -47,6 +47,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: node scripts/get-coverage.js
         # Writes PREV_COVERAGE to $GITHUB_ENV
 
@@ -149,13 +150,26 @@ jobs:
 
       - name: Save PR info
         run: |
-          echo "PR_NUMBER=${{ steps.cpr.outputs.pull-request-number }}" >> $GITHUB_ENV
-          echo "PR_URL=${{ steps.cpr.outputs.pull-request-url }}" >> $GITHUB_ENV
-          echo "PR_CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+          PR_NUM="${{ steps.cpr.outputs.pull-request-number }}"
+          if [ -z "$PR_NUM" ]; then
+            echo "No PR was created — write-tests.js produced no passing tests. Nothing to poll."
+            echo "PR_CREATED=false" >> $GITHUB_ENV
+            echo "PR_NUMBER=0" >> $GITHUB_ENV
+            echo "TARGET_REACHED=true" >> $GITHUB_ENV
+            echo "FINAL_COVERAGE=0" >> $GITHUB_ENV
+            echo "ATTEMPT_NUMBER=1" >> $GITHUB_ENV
+            echo "COVERAGE_STATUS=PARTIAL" >> $GITHUB_ENV
+          else
+            echo "PR_CREATED=true" >> $GITHUB_ENV
+            echo "PR_NUMBER=$PR_NUM" >> $GITHUB_ENV
+            echo "PR_URL=${{ steps.cpr.outputs.pull-request-url }}" >> $GITHUB_ENV
+            echo "PR_CREATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
+          fi
 
       # ── Poll SonarCloud — Attempt 1 ──────────────────────────────
 
       - name: Poll SonarCloud — Attempt 1
+        if: env.PR_CREATED == 'true'
         run: node scripts/poll-sonar.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

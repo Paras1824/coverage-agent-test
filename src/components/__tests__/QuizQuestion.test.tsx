@@ -264,6 +264,21 @@ describe('QuizQuestion', () => {
     expect(screen.getByLabelText('Paris')).toBeDisabled();
   });
 
+  it('toggles selection when clicking the option label text (not the input)', async () => {
+    const user = userEvent.setup();
+    render(
+      <QuizQuestion
+        questionId="q2"
+        questionText="Pick multiple"
+        questionType="multiple"
+        options={multipleOptions}
+        onAnswer={jest.fn()}
+      />,
+    );
+    await user.click(screen.getByText('useState'));
+    expect(screen.getByLabelText('useState')).toBeChecked();
+  });
+
   it('does not respond to clicks when disabled prop is set', async () => {
     const user = userEvent.setup();
     const onAnswer = jest.fn();
