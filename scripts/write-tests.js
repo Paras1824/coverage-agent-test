@@ -28,20 +28,29 @@ function getTestPath(srcPath) {
 }
 
 async function callGemini(prompt) {
-  const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
-    }),
-  });
-  if (!res.ok) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(`${GEMINI_URL}?key=${process.env.GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.candidates[0].content.parts[0].text;
+    }
+    if (res.status === 429) {
+      const waitSec = [30, 60, 120][attempt];
+      console.warn(`  Rate limited (429). Waiting ${waitSec}s...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1000));
+      continue;
+    }
     const body = await res.text();
     throw new Error(`Gemini API ${res.status}: ${body.slice(0, 200)}`);
   }
-  const data = await res.json();
-  return data.candidates[0].content.parts[0].text;
+  throw new Error('Gemini API 429: quota exceeded after retries');
 }
 
 function stripCodeBlock(text) {
