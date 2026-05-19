@@ -150,7 +150,8 @@ const QuizQuestion: React.FC<QuizQuestionProps> = ({
               key={option.id}
               style={getOptionStyle(option)}
               onClick={(e) => {
-                if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                const tag = (e.target as HTMLElement).tagName;
+                if (tag === 'INPUT' || tag === 'LABEL') return;
                 toggleOption(option.id);
               }}
             >
