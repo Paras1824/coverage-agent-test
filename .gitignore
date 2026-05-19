@@ -4,6 +4,7 @@ scripts/node_modules/
 scripts/baseline-coverage.json
 scripts/test-pattern.json
 scripts/email-body.html
+context.txt
 *.env
 .env*
 dist/
